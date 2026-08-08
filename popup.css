@@ -1,0 +1,247 @@
+/* ─── Tokens ─────────────────────────────────────────── */
+:root{
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --card:     #1c2128;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --blue:     #3b82f6;
+  --blue-g:   linear-gradient(135deg,#1d4ed8,#3b82f6);
+  --blue-sh:  rgba(59,130,246,.28);
+  --green:    #00ff88;
+  --green-g:  linear-gradient(135deg,#00ff88,#00e5cc);
+  --green-sh: rgba(0,255,136,.30);
+  --radius:   12px;
+  --fast:     cubic-bezier(.16,1,.3,1);
+}
+
+/* ─── Reset ──────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ─── Root shell ─────────────────────────────────────── */
+html,body{
+  width:360px;
+  background:var(--bg);
+  border-radius:var(--radius);
+  overflow:hidden;
+  position:relative;
+}
+
+
+
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--text);
+  font-size:13px;
+  animation:pop .12s var(--fast) both;
+  transform-origin:top center;
+}
+
+@keyframes pop{
+  from{opacity:0;transform:scale(.97) translateY(-4px)}
+  to  {opacity:1;transform:none}
+}
+
+.wrap{display:flex;flex-direction:column;gap:10px;padding:14px}
+
+/* ─── Header ─────────────────────────────────────────── */
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{width:34px;height:34px;border-radius:8px;object-fit:cover}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.2}
+.turbo{
+  background:var(--blue-g);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.brand-sub{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ─── Badge ──────────────────────────────────────────── */
+.badge{
+  display:flex;align-items:center;gap:5px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;padding:3px 9px;
+  font-size:11px;font-weight:600;color:var(--muted);
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--muted);
+  transition:background .3s,box-shadow .3s;
+}
+.badge.on .dot {
+  background:var(--green);
+  box-shadow:0 0 6px var(--green);
+  animation:pulse 1.4s infinite;
+}
+.badge.on{color:var(--text)}
+.badge.detecting .dot {
+  background:var(--blue);
+  box-shadow:0 0 6px var(--blue);
+  animation:pulse-blue 1.4s infinite;
+}
+.badge.detecting{color:var(--text)}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,.5)}
+  60%    {box-shadow:0 0 0 5px rgba(0,255,136,0)}
+}
+@keyframes pulse-blue{
+  0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}
+  60%    {box-shadow:0 0 0 5px rgba(59,130,246,0)}
+}
+
+/* ─── Alert ──────────────────────────────────────────── */
+.alert{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(59,130,246,.1);
+  border:1px solid rgba(59,130,246,.3);
+  border-radius:8px;padding:8px 11px;
+  font-size:11.5px;color:#93c5fd;
+  line-height:1.4;
+}
+.alert svg{width:15px;height:15px;flex-shrink:0;stroke:#60a5fa}
+.hidden{display:none!important}
+
+/* ─── Mode Cards ─────────────────────────────────────── */
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.mode input{display:none}
+.card{
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;padding:9px 6px;
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  cursor:pointer;text-align:center;
+  transition:border-color .18s,box-shadow .18s,transform .18s;
+}
+.card svg{
+  width:18px;height:18px;
+  stroke:var(--muted);
+  transition:stroke .18s,transform .18s;
+}
+.mode:hover .card{border-color:var(--muted);transform:translateY(-1px)}
+
+/* blue selected */
+.mode input:checked + .card{
+  border-color:var(--blue);
+  box-shadow:0 0 12px var(--blue-sh);
+}
+.mode input:checked + .card svg{stroke:var(--blue);transform:scale(1.12)}
+.mode input:checked + .card .mname{
+  background:var(--blue-g);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* flash green override */
+.mode input[value="Flash"]:checked + .card{
+  border-color:var(--green);
+  box-shadow:0 0 14px var(--green-sh);
+}
+.mode input[value="Flash"]:checked + .card svg{stroke:var(--green)}
+.mode input[value="Flash"]:checked + .card .mname{
+  background:var(--green-g);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+.mname{font-size:12px;font-weight:700}
+.mlimit{font-size:10px;color:var(--muted)}
+.mspeed{font-size:9px;color:var(--muted);opacity:.8}
+
+/* ─── Stats ──────────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;padding:8px 6px;text-align:center;
+}
+.sval{
+  font-size:18px;
+  font-weight:800;
+  color: var(--text);
+  transition: color 0.2s, text-shadow 0.2s;
+}
+#statUnsaved.has-value{
+  color: var(--blue);
+  text-shadow: 0 0 6px var(--blue-sh);
+}
+body:has(input[value="Flash"]:checked) #statUnsaved.has-value{
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green-sh);
+}
+#statFailed.has-value{
+  color: #ff4d4d;
+  text-shadow: 0 0 6px rgba(255, 77, 77, 0.35);
+}
+#statSkipped.has-value{
+  color: #ffb700;
+  text-shadow: 0 0 6px rgba(255, 183, 0, 0.3);
+}
+.slbl{font-size:10px;font-weight:600;color:var(--muted);margin-top:2px}
+
+/* ─── Button ─────────────────────────────────────────── */
+.btn{
+  display:flex;align-items:center;justify-content:center;
+  gap:7px;width:100%;padding:11px;
+  border:none;border-radius:10px;
+  font-size:13px;font-weight:700;
+  cursor:pointer;
+  transition:filter .15s,transform .12s;
+}
+.btn svg{width:15px;height:15px}
+.btn.run{
+  background:var(--blue-g);
+  color:#fff;
+  box-shadow:0 4px 16px var(--blue-sh);
+}
+.btn.stop{
+  background:var(--blue-g);
+  color:#fff;
+  box-shadow:0 4px 16px var(--blue-sh);
+}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+
+/* flash button override via :has */
+body:has(input[value="Flash"]:checked) .btn{
+  background:var(--green-g);
+  color:#0d1117;
+  box-shadow:0 4px 16px var(--green-sh);
+}
+
+/* ─── Terminal ───────────────────────────────────────── */
+.terminal{display:flex;flex-direction:column;gap:5px}
+.term-hdr{
+  display:flex;justify-content:space-between;
+  font-size:11px;font-weight:600;color:var(--muted);
+}
+.term-cap{font-weight:400;opacity:.7}
+.term-body{
+  background:#050810;
+  border:1px solid var(--border);
+  border-radius:8px;padding:9px 10px;
+  font-family:Consolas,Monaco,monospace;
+  font-size:10px;line-height:1.55;
+  color:#cbd5e1;
+  min-height:82px;
+  display:flex;flex-direction:column;justify-content:flex-start;gap:3px;
+}
+.log-row{
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  animation:fadein .15s ease-out both;
+}
+.log-ph{
+  color:var(--muted);font-style:italic;
+  display:flex;align-items:center;justify-content:center;
+  height:60px;
+}
+@keyframes fadein{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
