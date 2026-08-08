@@ -23,11 +23,9 @@ const addLog = (message) => {
         state.logs.shift();
     }
     console.log(formattedLog);
-    // Broadcast status update to extension popup (catch if popup is not active)
-    chrome.runtime.sendMessage({ action: 'STATUS_UPDATE', state: getStatus() }).catch(() => {});
+    chrome.runtime.sendMessage({ action: 'STATUS_UPDATE', state: getStatus() }).catch(() => { });
 };
 
-// Listen for messages from the popup UI
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'GET_STATUS') {
         sendResponse(getStatus());
@@ -43,14 +41,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         sendResponse({ success: true });
     }
-    return true; // Keep message channel open for async response
+    return true;
 });
 
-// Sleep utility with cancellation support
 const sleep = (ms) => {
     return new Promise((resolve) => {
         const timeout = setTimeout(resolve, ms);
-        // We check periodically if stopFlag is set to resolve earlier if stopped
         const checkInterval = setInterval(() => {
             if (state.stopFlag) {
                 clearTimeout(timeout);
@@ -61,14 +57,13 @@ const sleep = (ms) => {
     });
 };
 
-// Polling waiter
 const waitFor = async (selector, timeout, step, useRAF = false) => {
     const start = performance.now();
     while (performance.now() - start < timeout) {
         if (state.stopFlag) return null;
         const el = document.querySelector(selector);
         if (el) return el;
-        
+
         if (useRAF) {
             await new Promise(r => requestAnimationFrame(r));
         } else {
@@ -78,7 +73,54 @@ const waitFor = async (selector, timeout, step, useRAF = false) => {
     return null;
 };
 
-// Main controller function
+// Waits for either the Save icon (unsave confirmed) OR the
+// "Remove From Saved and Collections?" popup — whichever comes first.
+const waitForUnsaveOutcome = async (timeout, step, useRAF) => {
+    const start = performance.now();
+    while (performance.now() - start < timeout) {
+        if (state.stopFlag) return { type: 'stopped' };
+
+        if (document.querySelector('svg[aria-label="Save"]')) {
+            return { type: 'confirmed' };
+        }
+
+        const popupTitle = [...document.querySelectorAll('h3')]
+            .find(h => h.textContent?.trim() === 'Remove From Saved and Collections?');
+        if (popupTitle) {
+            return { type: 'popup' };
+        }
+
+        if (useRAF) {
+            await new Promise(r => requestAnimationFrame(r));
+        } else {
+            await sleep(step);
+        }
+    }
+    return { type: 'timeout' };
+};
+
+// Handles the collection confirmation popup if present. Returns true if
+// it was found and confirmed, false if it never appeared.
+const resolveCollectionPopup = async (CONFIG) => {
+    const confirmBtn = [...document.querySelectorAll('button')]
+        .find(b => b.textContent?.trim() === 'Remove');
+
+    if (!confirmBtn) return false;
+
+    confirmBtn.click();
+    // wait for the popup itself to close, not just for Save to appear —
+    // some collection posts take an extra beat to update the icon after this
+    const start = performance.now();
+    while (performance.now() - start < 1500) {
+        if (state.stopFlag) return true;
+        const stillOpen = [...document.querySelectorAll('h3')]
+            .find(h => h.textContent?.trim() === 'Remove From Saved and Collections?');
+        if (!stillOpen) return true;
+        await sleep(CONFIG.pollStep);
+    }
+    return true; // clicked it regardless; let the Save-confirmation step downstream judge success
+};
+
 const startUnsaving = async (mode) => {
     state.isRunning = true;
     state.activeMode = mode;
@@ -86,7 +128,6 @@ const startUnsaving = async (mode) => {
     state.stats = { unsaved: 0, failed: 0, skipped: 0 };
     state.logs = [];
 
-    // Define configuration based on mode
     let CONFIG = {
         limit: 100,
         pollStep: 40,
@@ -128,6 +169,16 @@ const startUnsaving = async (mode) => {
     addLog(`🚀 Started in ${mode} Mode (Limit: ${CONFIG.limit === Infinity ? 'Unlimited' : CONFIG.limit})`);
 
     const closeViewer = async () => {
+        // clear any lingering collection popup first — it sits on top of the Close icon
+        const stalePopupBtn = [...document.querySelectorAll('button')]
+            .find(b => b.textContent?.trim() === 'Cancel' || b.textContent?.trim() === 'Remove');
+        const stalePopupTitle = [...document.querySelectorAll('h3')]
+            .find(h => h.textContent?.trim() === 'Remove From Saved and Collections?');
+        if (stalePopupTitle && stalePopupBtn) {
+            stalePopupBtn.click();
+            await sleep(CONFIG.pollStep * 2);
+        }
+
         const btn = document.querySelector('svg[aria-label="Close"]')?.closest('[role="button"]');
         if (!btn) return true;
         btn.click();
@@ -158,7 +209,6 @@ const startUnsaving = async (mode) => {
     try {
         while (emptyRounds < CONFIG.emptyRoundLimit) {
             if (state.stopFlag) break;
-
             if (state.stats.unsaved >= CONFIG.limit) {
                 addLog(`🎯 Reached unsave limit of ${CONFIG.limit} posts.`);
                 break;
@@ -179,7 +229,6 @@ const startUnsaving = async (mode) => {
             for (const url of urls) {
                 if (state.stopFlag) break;
                 if (state.stats.unsaved >= CONFIG.limit) break;
-
                 if (processed.has(url)) continue;
 
                 if ((failedAttempts.get(url) || 0) >= CONFIG.maxRetries) {
@@ -188,12 +237,10 @@ const startUnsaving = async (mode) => {
                     continue;
                 }
 
-                // Close active viewer if stuck from previous attempt
                 if (document.querySelector('svg[aria-label="Close"]')) {
                     await closeViewer();
                 }
 
-                // Locate item in DOM
                 const link = [...document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]')]
                     .find(a => a.href.split('?')[0] === url);
 
@@ -238,8 +285,24 @@ const startUnsaving = async (mode) => {
                 // Click Remove to unsave
                 actionBtn.closest('[role="button"]')?.click();
 
-                // Confirm Action by waiting for Save button
-                const confirmed = await waitFor('svg[aria-label="Save"]', 1500, CONFIG.pollStep, CONFIG.useRAF);
+                // Race: either the Save icon appears directly (simple saved post)
+                // OR the collection-confirmation popup appears (post in a collection)
+                const outcome = await waitForUnsaveOutcome(1500, CONFIG.pollStep, CONFIG.useRAF);
+
+                let confirmed = false;
+
+                if (outcome.type === 'confirmed') {
+                    confirmed = true;
+                } else if (outcome.type === 'popup') {
+                    addLog(`📁 Collection popup detected: ${url.split('/').filter(Boolean).pop()}`);
+                    await resolveCollectionPopup(CONFIG);
+                    // now wait for the actual Save confirmation after confirming the popup
+                    const save = await waitFor('svg[aria-label="Save"]', 2000, CONFIG.pollStep, CONFIG.useRAF);
+                    confirmed = !!save;
+                } else if (outcome.type === 'stopped') {
+                    break;
+                }
+                // outcome.type === 'timeout' -> confirmed stays false
 
                 if (confirmed) {
                     state.stats.unsaved++;
@@ -272,6 +335,6 @@ const startUnsaving = async (mode) => {
     } finally {
         state.isRunning = false;
         state.stopFlag = false;
-        chrome.runtime.sendMessage({ action: 'STATUS_UPDATE', state: getStatus() }).catch(() => {});
+        chrome.runtime.sendMessage({ action: 'STATUS_UPDATE', state: getStatus() }).catch(() => { });
     }
 };
