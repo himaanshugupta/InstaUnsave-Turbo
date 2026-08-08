@@ -6,8 +6,8 @@
 ## ✨ Features
 
 - **3 Speed Modes**:
-  - 🟢 **Basic (`Safe & Steady`)**: 250ms settle delay, limit up to 100 posts. Extremely safe.
-  - 🔵 **Fast (`Turbo Balanced`)**: 150ms settle delay, limit up to 200 posts. High performance.
+  - 🟢 **Basic (`Steady`)**: 250ms settle delay, limit up to 100 posts. Extremely safe.
+  - 🔵 **Fast (`Balanced`)**: 150ms settle delay, limit up to 200 posts. High performance.
   - ⚡ **Flash (`Extreme Speed`)**: 80ms settle delay, unlimited posts. Uses `requestAnimationFrame` timing synchronizations to run at screen paint cycles.
 - **Premium Dark UI/UX**:
   - Glassmorphic dark-theme design layout matching modern OS styles.
