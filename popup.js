@@ -3,7 +3,7 @@
 /* ── DOM refs ─────────────────────────────────────── */
 const badge     = document.getElementById('badge');
 const badgeText = document.getElementById('badgeText');
-const alert     = document.getElementById('alert');
+const alertBox  = document.getElementById('alert');
 const alertMsg  = document.getElementById('alertMsg');
 const btn       = document.getElementById('btn');
 const btnText   = document.getElementById('btnText');
@@ -23,8 +23,8 @@ let running  = false;
 
 /* ── Helpers ──────────────────────────────────────── */
 const showAlert = (msg) => {
-  if (msg) { alertMsg.textContent = msg; alert.classList.remove('hidden'); }
-  else      { alert.classList.add('hidden'); }
+  if (msg) { alertMsg.textContent = msg; alertBox.classList.remove('hidden'); }
+  else      { alertBox.classList.add('hidden'); }
 };
 
 const setRunning = (on, mode) => {
