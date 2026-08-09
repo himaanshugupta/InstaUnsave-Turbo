@@ -24,6 +24,9 @@ const chartGradStop2 = document.querySelector('#chartGrad stop:nth-child(2)');
 /* ── SVG Icons ────────────────────────────────────── */
 const ICON_PLAY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
 const ICON_STOP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m19 13 2 2v-4a2 2 0 0 0-2-2h-8"/><path d="M9 3h10a2 2 0 0 1 2 2v7"/><path d="M3 3l18 18"/><path d="M5 5v14a1 1 0 0 0 1.63.78L12 15l4.37 4.78A1 1 0 0 0 18 19V9"/></svg>`;
+const parser = new DOMParser();
+const playNode = parser.parseFromString(ICON_PLAY, 'image/svg+xml').documentElement;
+const stopNode = parser.parseFromString(ICON_STOP, 'image/svg+xml').documentElement;
 
 /* ── State ────────────────────────────────────────── */
 let tabId = null;
@@ -105,8 +108,11 @@ const setRunning = (on, mode) => {
   badge.className = 'badge' + (on ? ' on' : '');
   badgeText.textContent = on ? 'Running' : 'Idle';
   btn.className = 'btn ' + (on ? 'stop' : 'run');
-  btn.innerHTML = (on ? ICON_STOP + '<span id="btnText">Stop Unsaving</span>'
-    : ICON_PLAY + '<span id="btnText">Run Turbo Unsave</span>');
+  btn.replaceChildren(on ? stopNode.cloneNode(true) : playNode.cloneNode(true));
+  const span = document.createElement('span');
+  span.id = 'btnText';
+  span.textContent = on ? 'Stop Unsaving' : 'Run Turbo Unsave';
+  btn.appendChild(span);
   radios.forEach(r => { r.disabled = on; });
 
   // 🟢 LED toggle on terminal
@@ -127,11 +133,20 @@ const setRunning = (on, mode) => {
 };
 
 const renderLogs = (arr) => {
+  logs.replaceChildren();
   if (!arr || !arr.length) {
-    logs.innerHTML = `<div class="log-ph">${running ? 'Initializing…' : 'Waiting for execution to start…'}</div>`;
+    const ph = document.createElement('div');
+    ph.className = 'log-ph';
+    ph.textContent = running ? 'Initializing…' : 'Waiting for execution to start…';
+    logs.appendChild(ph);
     return;
   }
-  logs.innerHTML = arr.map(l => `<div class="log-row">${l}</div>`).join('');
+  arr.forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'log-row';
+    row.textContent = l;
+    logs.appendChild(row);
+  });
 };
 
 const syncUI = (s) => {
