@@ -6,17 +6,21 @@
 ## ✨ Features
 
 - **3 Speed Modes**:
-  - 🟢 **Basic (`Steady`)**: 250ms settle delay, limit up to 100 posts. Extremely safe.
-  - 🔵 **Fast (`Balanced`)**: 150ms settle delay, limit up to 200 posts. High performance.
-  - ⚡ **Flash (`Extreme Speed`)**: 80ms settle delay, unlimited posts. Uses `requestAnimationFrame` timing synchronizations to run at screen paint cycles.
+  - 🔵 **Basic**: Safe and steady. Up to 100 posts.
+  - 🟢 **Fast**: Balanced high performance. Up to 200 posts.
+  - ⚡ **Flash**: Extreme speed. Unlimited posts. Uses `requestAnimationFrame` timing for blistering fast execution.
 - **Premium Dark UI/UX**:
   - Glassmorphic dark-theme design layout matching modern OS styles.
-  - Snappy hardware-accelerated entrance transitions (`0.12s`).
-  - Rounded border edges (`12px`) blending with modern system window designs.
+  - **Dynamic Theming**: The entire UI dynamically shifts colors (Blue, Green, Orange) based on your selected speed mode using modern CSS `:has()` selectors.
+  - Unselected modes dim out gracefully while the engine is running.
+- **Real-Time Speed Telemetry**:
+  - Live animated SVG graph plotting your actual unsave speed per second.
+  - Graph scaling automatically adjusts depending on the active mode to perfectly center your telemetry line.
+  - Smooth 350ms tick updates for an active, realistic wave visualization.
 - **Dynamic Visual Feedback**:
-  - **Inline Status Badge**: Cycles from pulsing neon-blue `Detecting...` during page verification to `Idle` or pulsing neon-green `Running`.
-  - **Color-Coded Stats**: Live counts glow dynamically once they are greater than 0 (Unsaved: neon-blue/neon-green, Failed: neon-red, Skipped: neon-yellow), keeping the UI clean at startup.
-  - **Live Log Terminal**: A monospace rolling logs panel showcasing the last 5 execution logs.
+  - **Inline Status Badge**: Cycles from pulsing neon `Detecting...` to a glowing `Running` state.
+  - **Color-Coded Stats**: Live counts glow dynamically depending on the current mode theme.
+  - **Live Log Terminal**: Monospace rolling logs panel showcasing execution state, complete with a blinking LED activity indicator.
 - **Smart Validation Guidance**:
   - Inline error banners notifying users if they are not on Instagram, not on the Saved bookmark page, or need to select the "All Posts" collection to continue.
 
@@ -29,9 +33,9 @@ InstaUnsave-Turbo/
 ├── manifest.json      # Manifest V3 extension configuration
 ├── popup.html         # Instantly rendered popup layout
 ├── popup.css          # Dark theme tokens, animations, and typography
-├── popup.js           # Asynchronous controller with parallel loading
+├── popup.js           # Asynchronous controller with parallel loading & graph rendering
 ├── content.js         # Unified automation execution engine inside the Instagram tab
-├── icons/             # Custom blue branded logo assets (16x16, 48x48, 128x128)
+├── icons/             # Custom branded logo assets (16, 48, 128px)
 └── README.md          # Project guide
 ```
 
@@ -52,10 +56,10 @@ InstaUnsave-Turbo/
 1. Open Instagram in your browser and go to your **Saved** collections page:  
    `https://www.instagram.com/your_username/saved/`
 2. **Important**: Click on the **"All Posts"** collection to display the grid of bookmarked posts.
-3. Click the extension toolbar icon. The status badge will briefly pulse blue (`Detecting...`) as it verifies the page status.
-4. Select your desired speed mode (Basic, Fast, or Flash).
+3. Click the extension toolbar icon. The status badge will briefly pulse as it verifies the page status.
+4. Select your desired speed mode (Basic, Fast, or Flash). Notice the UI themes match your choice!
 5. Click **Run Turbo Unsave** to start!
-6. Track live logs and counters. Click **Stop Unsaving** anytime to pause or cancel.
+6. Track live logs, counters, and watch the real-time speed graph visualize the execution engine. Click **Stop Unsaving** anytime to pause or cancel.
 
 ---
 

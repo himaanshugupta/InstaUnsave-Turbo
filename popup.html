@@ -20,7 +20,10 @@
           <div class="brand-sub">Bulk Instagram Unsaver</div>
         </div>
       </div>
-      <div class="badge detecting" id="badge"><span class="dot"></span><span id="badgeText">Detecting...</span></div>
+      <div class="badge detecting" id="badge">
+        <span class="dot"></span>
+        <span id="badgeText">Detecting...</span>
+      </div>
     </header>
 
     <!-- Alert Banner -->
@@ -37,7 +40,7 @@
     <div class="modes">
       <label class="mode">
         <input type="radio" name="mode" value="Basic" checked>
-        <span class="card">
+        <div class="card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
             stroke-linejoin="round">
             <polygon points="6 3 20 12 6 21 6 3" />
@@ -45,11 +48,12 @@
           <span class="mname">Basic</span>
           <span class="mlimit">Max 100</span>
           <span class="mspeed">Steady (250ms)</span>
-        </span>
+        </div>
       </label>
+
       <label class="mode">
         <input type="radio" name="mode" value="Fast">
-        <span class="card">
+        <div class="card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
             stroke-linejoin="round">
             <polygon points="2 4 11 12 2 20 2 4" />
@@ -58,19 +62,20 @@
           <span class="mname">Fast</span>
           <span class="mlimit">Max 200</span>
           <span class="mspeed">Balanced (150ms)</span>
-        </span>
+        </div>
       </label>
+
       <label class="mode">
         <input type="radio" name="mode" value="Flash">
-        <span class="card">
+        <div class="card">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           <span class="mname">Flash</span>
           <span class="mlimit">Unlimited</span>
-          <span class="mspeed">Extreme Speed (80ms)</span>
-        </span>
+          <span class="mspeed">Extreme (80ms)</span>
+        </div>
       </label>
     </div>
 
@@ -90,6 +95,27 @@
       </div>
     </div>
 
+    <!-- Real-Time Activity Speed Graph -->
+    <div class="graph-card">
+      <div class="graph-hdr">
+        <span>Unsave Speed (posts/sec)</span>
+        <span class="graph-val" id="graphVal">0.0 /s</span>
+      </div>
+      <div class="graph-body">
+        <svg id="activityGraph" viewBox="0 0 328 38" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--blue)" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="var(--blue)" stop-opacity="0.0" />
+            </linearGradient>
+          </defs>
+          <polygon id="graphArea" points="0,38 328,38" fill="url(#chartGrad)" />
+          <polyline id="graphLine" points="0,38 328,38" fill="none" stroke="var(--blue)" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    </div>
+
     <!-- Action Button -->
     <button class="btn run" id="btn" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
@@ -100,12 +126,19 @@
     </button>
 
     <!-- Log Terminal -->
-    <div class="terminal">
-      <div class="term-hdr"><span>Live Logs</span><span class="term-cap">last 5</span></div>
+    <div class="terminal" id="terminal">
+      <div class="term-hdr">
+        <div class="term-title">
+          <span class="term-led" id="logLed"></span>
+          <span>Live Logs</span>
+        </div>
+        <span class="term-cap">last 5</span>
+      </div>
       <div class="term-body" id="logs">
         <div class="log-ph">Waiting for execution to start…</div>
       </div>
     </div>
+
   </div>
 </body>
 

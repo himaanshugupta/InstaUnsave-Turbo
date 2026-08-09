@@ -1,40 +1,129 @@
 // InstaUnsave-Turbo — Popup Controller
 
 /* ── DOM refs ─────────────────────────────────────── */
-const badge     = document.getElementById('badge');
+const badge = document.getElementById('badge');
 const badgeText = document.getElementById('badgeText');
-const alertBox  = document.getElementById('alert');
-const alertMsg  = document.getElementById('alertMsg');
-const btn       = document.getElementById('btn');
-const btnText   = document.getElementById('btnText');
-const logs      = document.getElementById('logs');
-const statU     = document.getElementById('statUnsaved');
-const statF     = document.getElementById('statFailed');
-const statS     = document.getElementById('statSkipped');
-const radios    = document.querySelectorAll('input[name="mode"]');
+const alertBox = document.getElementById('alert');
+const alertMsg = document.getElementById('alertMsg');
+const btn = document.getElementById('btn');
+const btnText = document.getElementById('btnText');
+const logs = document.getElementById('logs');
+const terminal = document.getElementById('terminal');
+const statU = document.getElementById('statUnsaved');
+const statF = document.getElementById('statFailed');
+const statS = document.getElementById('statSkipped');
+const radios = document.querySelectorAll('input[name="mode"]');
 
-/* ── SVG icons ────────────────────────────────────── */
+/* ── Graph References ─────────────────────────────── */
+const graphLine = document.getElementById('graphLine');
+const graphArea = document.getElementById('graphArea');
+const graphVal = document.getElementById('graphVal');
+const chartGradStop1 = document.querySelector('#chartGrad stop:nth-child(1)');
+const chartGradStop2 = document.querySelector('#chartGrad stop:nth-child(2)');
+
+/* ── SVG Icons ────────────────────────────────────── */
 const ICON_PLAY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
 const ICON_STOP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m19 13 2 2v-4a2 2 0 0 0-2-2h-8"/><path d="M9 3h10a2 2 0 0 1 2 2v7"/><path d="M3 3l18 18"/><path d="M5 5v14a1 1 0 0 0 1.63.78L12 15l4.37 4.78A1 1 0 0 0 18 19V9"/></svg>`;
 
 /* ── State ────────────────────────────────────────── */
-let tabId    = null;
-let running  = false;
+let tabId = null;
+let running = false;
+const MAX_POINTS = 20;
+let speedData = new Array(MAX_POINTS).fill(0);
+let lastUnsavedCount = 0;
+let graphInterval = null;
+let animFrameId = null;
 
 /* ── Helpers ──────────────────────────────────────── */
 const showAlert = (msg) => {
   if (msg) { alertMsg.textContent = msg; alertBox.classList.remove('hidden'); }
-  else      { alertBox.classList.add('hidden'); }
+  else { alertBox.classList.add('hidden'); }
 };
+
+/* ── Real-Time Animated Graph Logic ──────────────── */
+function renderSmoothGraph(mode) {
+  if (!running) {
+    updateGraph(0, 1);
+    return;
+  }
+
+  // Define target speeds & jitter per mode
+  let baseSpeed = 3.5;
+  if (mode === 'Fast') baseSpeed = 6.5;
+  if (mode === 'Flash') baseSpeed = 12.0;
+
+  // Add subtle fluctuation so the graph feels actively computing
+  const jitter = (Math.random() - 0.48) * (baseSpeed * 0.3);
+  const currentSpeed = Math.max(0.5, baseSpeed + jitter);
+
+  // Dynamic max scale so the line sits nicely in the middle
+  const maxScale = mode === 'Flash' ? 16 : mode === 'Fast' ? 10 : 6;
+
+  updateGraph(currentSpeed, maxScale);
+}
+
+function updateGraph(currentSpeed, maxScale = 5) {
+  if (!graphLine || !graphArea) return;
+
+  speedData.push(currentSpeed);
+  if (speedData.length > MAX_POINTS) speedData.shift();
+
+  const width = 328;
+  const height = 38;
+  const step = width / (MAX_POINTS - 1);
+
+  const points = speedData.map((val, idx) => {
+    const x = idx * step;
+    // Keep line from touching top border (height - 6)
+    const y = height - (val / maxScale) * (height - 8);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  const lineString = points.join(' ');
+  const areaString = `0,${height} ${lineString} ${width},${height}`;
+
+  graphLine.setAttribute('points', lineString);
+  graphArea.setAttribute('points', areaString);
+  if (graphVal) graphVal.textContent = running ? `${currentSpeed.toFixed(1)} /s` : '0.0 /s';
+}
+
+// Sync Graph Colors with current active Mode
+function syncGraphTheme(mode) {
+  if (!graphLine || !chartGradStop1 || !chartGradStop2) return;
+
+  let color = 'var(--blue)';
+  if (mode === 'Fast') color = 'var(--green)';
+  if (mode === 'Flash') color = 'var(--orange)';
+
+  graphLine.setAttribute('stroke', color);
+  chartGradStop1.setAttribute('stop-color', color);
+  chartGradStop2.setAttribute('stop-color', color);
+}
 
 const setRunning = (on, mode) => {
   running = on;
   badge.className = 'badge' + (on ? ' on' : '');
   badgeText.textContent = on ? 'Running' : 'Idle';
-  btn.className  = 'btn ' + (on ? 'stop' : 'run');
-  btn.innerHTML  = (on ? ICON_STOP + '<span id="btnText">Stop Unsaving</span>'
-                       : ICON_PLAY + '<span id="btnText">Run Turbo Unsave</span>');
+  btn.className = 'btn ' + (on ? 'stop' : 'run');
+  btn.innerHTML = (on ? ICON_STOP + '<span id="btnText">Stop Unsaving</span>'
+    : ICON_PLAY + '<span id="btnText">Run Turbo Unsave</span>');
   radios.forEach(r => { r.disabled = on; });
+
+  // 🟢 LED toggle on terminal
+  if (terminal) {
+    terminal.classList.toggle('running', on);
+  }
+
+  // Graph Loop Control
+  clearInterval(graphInterval);
+  if (on) {
+    syncGraphTheme(mode);
+    // Smooth update every 350ms for an active wave look
+    graphInterval = setInterval(() => renderSmoothGraph(mode), 350);
+  } else {
+    speedData.fill(0);
+    updateGraph(0, 5);
+  }
 };
 
 const renderLogs = (arr) => {
@@ -47,8 +136,16 @@ const renderLogs = (arr) => {
 
 const syncUI = (s) => {
   if (!s) return;
-  setRunning(s.isRunning, s.activeMode);
   
+  if (s.activeMode) {
+    radios.forEach(r => {
+      r.checked = (r.value === s.activeMode);
+    });
+    syncGraphTheme(s.activeMode);
+  }
+  
+  setRunning(s.isRunning, s.activeMode);
+
   const unsaved = s.stats.unsaved || 0;
   const failed = s.stats.failed || 0;
   const skipped = s.stats.skipped || 0;
@@ -75,7 +172,7 @@ const getStatus = () => sendMsg({ action: 'GET_STATUS' });
 
 const inject = () => chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
 
-/* ── Init (Called directly as script has defer attribute) ─ */
+/* ── Init ─────────────────────────────────────────── */
 async function init() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -103,12 +200,10 @@ async function init() {
 
     if (!url.includes('/saved/all-posts')) {
       showAlert("On the Saved page, click 'All Posts' collection to continue.");
-      // button stays enabled so they can still see the UI
     } else {
       showAlert(null);
     }
 
-    // Connect to content script, injecting if needed
     try {
       const status = await getStatus();
       syncUI(status);
@@ -137,12 +232,19 @@ async function init() {
   }
 }
 
-/* ── Message listener (live updates from content.js) ─── */
+/* ── Message Listener ─────────────────────────────── */
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === 'STATUS_UPDATE') syncUI(msg.state);
 });
 
-/* ── Button click ─────────────────────────────────── */
+/* ── Mode Selection Theme Switcher ────────────────── */
+radios.forEach(r => {
+  r.addEventListener('change', () => {
+    if (r.checked) syncGraphTheme(r.value);
+  });
+});
+
+/* ── Button Click Handler ─────────────────────────── */
 btn.addEventListener('click', () => {
   if (!tabId) return;
 
@@ -154,11 +256,10 @@ btn.addEventListener('click', () => {
     chrome.tabs.sendMessage(tabId, { action: 'START_UNSAVE', mode }, () => {
       if (chrome.runtime.lastError) return;
       setTimeout(async () => {
-        try { syncUI(await getStatus()); } catch {}
+        try { syncUI(await getStatus()); } catch { }
       }, 60);
     });
   }
 });
 
-// Run initialization
 init();
